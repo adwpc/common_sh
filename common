@@ -1,7 +1,8 @@
 #!/bin/bash
 #adwpc
 
-CORES=`cat /proc/cpuinfo | grep "processor" | wc -l`
+CPU=''
+MEM=''
 OS_TYPE=''
 OS_VER=''
 CUR_DIR=$(cd `dirname $0`; pwd)
@@ -9,43 +10,54 @@ FNAME=`basename $0`
 LOG="$CUR_DIR/$FNAME.log"
 ERR="$CUR_DIR/$FNAME.err"
 
-
 #check os
 if [ -f /etc/os-release ]; then
     # freedesktop.org and systemd
     . /etc/os-release
+    CPU=`cat /proc/cpuinfo | grep "processor" | wc -l`
+    MEM=`free -b|grep "Mem"|awk -F' ' '{print $2}'`
     OS_TYPE=$NAME
     unset NAME
     OS_VER=$VERSION_ID
 elif type lsb_release >/dev/null 2>&1; then
     # linuxbase.org
+    CPU=`cat /proc/cpuinfo | grep "processor" | wc -l`
+    MEM=`free -b|grep "Mem"|awk -F' ' '{print $2}'`
     OS_TYPE=$(lsb_release -si)
     OS_VER=$(lsb_release -sr)
 elif [ -f /etc/lsb-release ]; then
     # For some versions of Debian/Ubuntu without lsb_release command
     . /etc/lsb-release
+    CPU=`cat /proc/cpuinfo | grep "processor" | wc -l`
+    MEM=`free -b|grep "Mem"|awk -F' ' '{print $2}'`
     OS_TYPE=$DISTRIB_ID
     OS_VER=$DISTRIB_RELEASE
 elif [ -f /etc/debian_version ]; then
     # Older Debian/Ubuntu/etc.
+    CPU=`cat /proc/cpuinfo | grep "processor" | wc -l`
+    MEM=`free -b|grep "Mem"|awk -F' ' '{print $2}'`
     OS_TYPE=Debian
     OS_VER=$(cat /etc/debian_version)
 elif [ -f /etc/SuSe-release ]; then
     # Older SuSE/etc.
+    CPU=`cat /proc/cpuinfo | grep "processor" | wc -l`
+    MEM=`free -b|grep "Mem"|awk -F' ' '{print $2}'`
     ...
 elif [ -f /etc/redhat-release ]; then
     # Older Red Hat, CentOS, etc.
+    CPU=`cat /proc/cpuinfo | grep "processor" | wc -l`
+    MEM=`free -b|grep "Mem"|awk -F' ' '{print $2}'`
     ...
 else
     # Fall back to uname, e.g. "Linux <version>", also works for BSD, etc.
     OS_TYPE=$(uname -s)
     OS_VER=$(uname -r)
+    CPU=`sysctl -n machdep.cpu.thread_count`
+    MEM=`sysctl -n hw.memsize`
 fi
 
 
-
-
-#check if exist
+#check if cmd exist
 function exist() {
     # $1 --help > /dev/null
     type "$1" > /dev/null 2>&1
@@ -364,18 +376,3 @@ function inst() {
 
 }
 
-#memory size by KB
-#usage: $(getmaxmem)
-function getmaxmem()
-{
-    local mem=`free -k|grep "Mem"|awk -F' ' '{print $2}'`
-    echo "$mem"
-}
-
-#get cpu cores
-#usage: $(getmaxcpu)
-function getmaxcpu()
-{
-    local cpu=`cat /proc/cpuinfo |grep processor|awk -F' ' '{print $3}'|tail -n1`
-    echo "$cpu"
-}
